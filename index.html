@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Nuage de Mots</title>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF6B35;
+            --secondary: #F7931E;
+            --accent: #4ECDC4;
+            --dark: #1A1A2E;
+            --light: #FFF8F0;
+            --shadow: rgba(26, 26, 46, 0.1);
+            
+            /* Thème clair */
+            --bg-primary: #FFF8F0;
+            --bg-secondary: #FFE5D9;
+            --bg-panel: #FFFFFF;
+            --text-primary: #1A1A2E;
+            --text-secondary: rgba(26, 26, 46, 0.7);
+            --border-color: #e0e0e0;
+            --input-bg: #FFF8F0;
+            --shadow-color: rgba(26, 26, 46, 0.1);
+        }
+
+        body.dark-mode {
+            --bg-primary: #1A1A2E;
+            --bg-secondary: #16213E;
+            --bg-panel: #0F3460;
+            --text-primary: #F1F1F1;
+            --text-secondary: rgba(241, 241, 241, 0.7);
+            --border-color: #2A3F5F;
+            --input-bg: #16213E;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -10%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            opacity: 0.1;
+            border-radius: 50%;
+            animation: float 20s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -30%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+            opacity: 0.08;
+            border-radius: 50%;
+            animation: float 25s ease-in-out infinite reverse;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(5deg); }
+            66% { transform: translate(-20px, 20px) rotate(-5deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideDown 0.6s ease-out;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--bg-panel);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow-color);
+        }
+
+        .theme-toggle-icon {
+            font-size: 1.3rem;
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle:hover .theme-toggle-icon {
+            transform: rotate(20deg);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-family: 'Archivo Black', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+            text-shadow: 4px 4px 0 var(--secondary);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--dark);
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            animation: fadeIn 0.8s ease-out 0.2s backwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px var(--shadow-color), 0 0 0 1px var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.4s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px var(--shadow-color), 0 0 0 1px var(--border-color);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        textarea {
+            font-family: 'DM Sans', sans-serif;
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 10px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            outline: none;
+            transition: opacity 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 3px solid var(--primary);
+            transition: transform 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 3px solid var(--primary);
+            transition: transform 0.2s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .value-display {
+            min-width: 40px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .color-picker-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .color-option {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .color-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .color-box {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .color-option input[type="radio"]:checked + .color-box {
+            border-color: var(--dark);
+            transform: scale(0.95);
+            box-shadow: 0 0 0 4px rgba(26, 26, 46, 0.1);
+        }
+
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        #wordcloud-container {
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .word {
+            display: inline-block;
+            position: absolute;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: popIn 0.5s ease-out backwards;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .word:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            filter: brightness(1.2);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .empty-state::before {
+            content: '✨';
+            display: block;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-out 0.4s backwards;
+        }
+
+        .credit {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .credit strong {
+            color: var(--primary);
+            font-weight: 700;
+            opacity: 1;
+        }
+
+        /* Amélioration du téléchargement */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        /* Amélioration des contrôles */
+        .control-group {
+            background: var(--input-bg);
+            padding: 1.25rem;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        body:not(.dark-mode) .control-group:hover {
+            background: #FFF3E6;
+        }
+
+        body.dark-mode .control-group:hover {
+            background: #1C2F4A;
+        }
+
+        /* Animation d'amélioration pour les mots */
+        .word {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .word:hover {
+            transform: scale(1.15) rotate(-2deg);
+            text-shadow: 3px 3px 8px rgba(0,0,0,0.2);
+        }
+
+        /* Badge de comptage */
+        .word-count-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), #45B7D1);
+            color: white;
+            padding: 0.35rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+
+        /* Shape picker styles */
+        .shape-picker {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .shape-option {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .shape-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .shape-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: var(--bg-panel);
+        }
+
+        .shape-option input[type="radio"]:checked + .shape-box {
+            border-color: var(--primary);
+            background: rgba(255, 107, 53, 0.1);
+            transform: scale(0.98);
+        }
+
+        .shape-box:hover {
+            transform: scale(1.02);
+            border-color: var(--accent);
+        }
+
+        .shape-icon {
+            font-size: 2rem;
+        }
+
+        .shape-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Checkbox styles */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-panel);
+        }
+
+        .checkbox-option:hover {
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-option span {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Stats panel */
+        .stats-panel {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border-color);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.25rem;
+            background: var(--input-bg);
+            border-radius: 16px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 20px var(--shadow-color);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Word rotation class */
+        .word.rotated {
+            transform: rotate(var(--rotation));
+        }
+
+        .word.rotated:hover {
+            transform: rotate(var(--rotation)) scale(1.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <span class="theme-toggle-icon" id="theme-icon">🌙</span>
+                <span id="theme-text">Mode Sombre</span>
+            </button>
+            <h1>Nuage de Mots</h1>
+            <p class="subtitle">Créez votre propre nuage de mots interactif</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel controls">
+                <div class="control-group">
+                    <label for="text-input">
+                        Votre Texte
+                        <span class="word-count-badge" id="word-count">0 mots</span>
+                    </label>
+                    <textarea 
+                        id="text-input" 
+                        placeholder="Entrez votre texte ici... Les mots les plus fréquents apparaîtront plus grands dans le nuage."
+                    ></textarea>
+                    <div class="info-badge">
+                        💡 Conseil: Plus de texte = meilleur résultat
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="max-words">Nombre de mots: <span id="max-words-value" class="value-display">50</span></label>
+                    <input 
+                        type="range" 
+                        id="max-words" 
+                        min="10" 
+                        max="100" 
+                        value="50"
+                    >
+                </div>
+
+                <div class="control-group">
+                    <label>Forme du nuage</label>
+                    <div class="shape-picker">
+                        <label class="shape-option">
+                            <input type="radio" name="cloud-shape" value="circle" checked>
+                            <div class="shape-box">
+                                <span class="shape-icon">⭕</span>
+                                <span class="shape-name">Cercle</span>
+                            </div>
+                        </label>
+                        <label class="shape-option">
+                            <input type="radio" name="cloud-shape" value="heart">
+                            <div class="shape-box">
+                                <span class="shape-icon">❤️</span>
+                                <span class="shape-name">Cœur</span>
+                            </div>
+                        </label>
+                        <label class="shape-option">
+                            <input type="radio" name="cloud-shape" value="star">
+                            <div class="shape-box">
+                                <span class="shape-icon">⭐</span>
+                                <span class="shape-name">Étoile</span>
+                            </div>
+                        </label>
+                        <label class="shape-option">
+                            <input type="radio" name="cloud-shape" value="cloud">
+                            <div class="shape-box">
+                                <span class="shape-icon">☁️</span>
+                                <span class="shape-name">Nuage</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Options d'animation</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="rotate-words" checked>
+                            <span>🔄 Rotation des mots</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="animate-hover" checked>
+                            <span>✨ Animation au survol</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Palette de couleurs</label>
+                    <div class="color-picker-group">
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="warm" checked>
+                            <div class="color-box" style="background: linear-gradient(135deg, #FF6B35, #F7931E);"></div>
+                        </label>
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="cool">
+                            <div class="color-box" style="background: linear-gradient(135deg, #4ECDC4, #556FB5);"></div>
+                        </label>
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="nature">
+                            <div class="color-box" style="background: linear-gradient(135deg, #6BCF7F, #2D7D46);"></div>
+                        </label>
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="sunset">
+                            <div class="color-box" style="background: linear-gradient(135deg, #FF5E78, #FFA94D);"></div>
+                        </label>
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="ocean">
+                            <div class="color-box" style="background: linear-gradient(135deg, #1CA7EC, #5433FF);"></div>
+                        </label>
+                        <label class="color-option">
+                            <input type="radio" name="color-scheme" value="berry">
+                            <div class="color-box" style="background: linear-gradient(135deg, #C94B7C, #8E3B9A);"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn" onclick="generateWordCloud()">✨ Générer</button>
+                    <button class="btn btn-secondary" onclick="downloadImage()">⬇️ Télécharger</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div id="wordcloud-container">
+                    <div class="empty-state">
+                        Entrez du texte et cliquez sur "Générer" pour créer votre nuage de mots
+                    </div>
+                </div>
+                
+                <div id="stats-panel" class="stats-panel" style="display: none;">
+                    <h3 class="stats-title">📊 Statistiques</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-words">0</span>
+                            <span class="stat-label">Mots affichés</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-unique">0</span>
+                            <span class="stat-label">Mots uniques</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-total">0</span>
+                            <span class="stat-label">Mots totaux</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-top">-</span>
+                            <span class="stat-label">Mot le + fréquent</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p class="credit">Réalisé par <strong>ANTON NELCON Steve</strong></p>
+        </footer>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            const themeText = document.getElementById('theme-text');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Mode Clair';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Mode Sombre';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-icon').textContent = '☀️';
+                document.getElementById('theme-text').textContent = 'Mode Clair';
+            }
+        });
+
+        // Update slider value display
+        document.getElementById('max-words').addEventListener('input', function(e) {
+            document.getElementById('max-words-value').textContent = e.target.value;
+        });
+
+        // Word counter
+        document.getElementById('text-input').addEventListener('input', function(e) {
+            const text = e.target.value;
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            document.getElementById('word-count').textContent = words.length + ' mot' + (words.length > 1 ? 's' : '');
+        });
+
+        const colorSchemes = {
+            warm: ['#FF6B35', '#F7931E', '#FF9F1C', '#E63946', '#D62828'],
+            cool: ['#4ECDC4', '#556FB5', '#45B7D1', '#96CEB4', '#7B68EE'],
+            nature: ['#6BCF7F', '#2D7D46', '#55B559', '#7CB342', '#8BC34A'],
+            sunset: ['#FF5E78', '#FFA94D', '#FF7F50', '#FF6B9D', '#FFB74D'],
+            ocean: ['#1CA7EC', '#5433FF', '#667EEA', '#4A90E2', '#764BA2'],
+            berry: ['#C94B7C', '#8E3B9A', '#AA4B88', '#B857A9', '#9C27B0']
+        };
+
+        function getStopWords() {
+            return new Set([
+                'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'ou', 'mais',
+                'donc', 'or', 'ni', 'car', 'dans', 'sur', 'avec', 'sans', 'pour', 'par',
+                'ce', 'cet', 'cette', 'ces', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes',
+                'son', 'sa', 'ses', 'notre', 'nos', 'votre', 'vos', 'leur', 'leurs',
+                'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'on',
+                'me', 'te', 'se', 'moi', 'toi', 'lui', 'eux', 'qui', 'que', 'quoi',
+                'dont', 'où', 'est', 'sont', 'été', 'être', 'avoir', 'a', 'ai', 'as',
+                'avons', 'avez', 'ont', 'au', 'aux', 'à', 'y', 'en', 'ne', 'pas',
+                'plus', 'moins', 'très', 'bien', 'si', 'tout', 'tous', 'toute', 'toutes',
+                'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+                'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
+                'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'
+            ]);
+        }
+
+        function processText(text, maxWords) {
+            const stopWords = getStopWords();
+            const words = text
+                .toLowerCase()
+                .replace(/[^\w\sàâäéèêëïîôùûüÿæœç]/g, '')
+                .split(/\s+/)
+                .filter(word => word.length > 2 && !stopWords.has(word));
+
+            const frequency = {};
+            words.forEach(word => {
+                frequency[word] = (frequency[word] || 0) + 1;
+            });
+
+            return Object.entries(frequency)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, maxWords);
+        }
+
+        function getSelectedColorScheme() {
+            const selected = document.querySelector('input[name="color-scheme"]:checked');
+            return colorSchemes[selected.value];
+        }
+
+        function generateWordCloud() {
+            const text = document.getElementById('text-input').value;
+            const maxWords = parseInt(document.getElementById('max-words').value);
+            const container = document.getElementById('wordcloud-container');
+            const statsPanel = document.getElementById('stats-panel');
+            const shape = document.querySelector('input[name="cloud-shape"]:checked').value;
+            const rotateWords = document.getElementById('rotate-words').checked;
+            const animateHover = document.getElementById('animate-hover').checked;
+
+            if (!text.trim()) {
+                container.innerHTML = '<div class="empty-state">Veuillez entrer du texte pour générer un nuage de mots</div>';
+                statsPanel.style.display = 'none';
+                return;
+            }
+
+            const wordFreq = processText(text, maxWords);
+            
+            if (wordFreq.length === 0) {
+                container.innerHTML = '<div class="empty-state">Aucun mot significatif trouvé. Essayez avec un texte différent.</div>';
+                statsPanel.style.display = 'none';
+                return;
+            }
+
+            // Calculate statistics
+            const totalWords = text.split(/\s+/).filter(w => w.length > 0).length;
+            updateStats(wordFreq.length, wordFreq.length, totalWords, wordFreq[0][0]);
+
+            const colors = getSelectedColorScheme();
+            const maxFreq = wordFreq[0][1];
+            const minFreq = wordFreq[wordFreq.length - 1][1];
+
+            container.innerHTML = '';
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            const centerX = containerWidth / 2;
+            const centerY = containerHeight / 2;
+
+            const positions = [];
+
+            wordFreq.forEach(([word, freq], index) => {
+                const fontSize = 16 + ((freq - minFreq) / (maxFreq - minFreq)) * 80;
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word';
+                wordElement.textContent = word;
+                wordElement.style.fontSize = fontSize + 'px';
+                wordElement.style.color = colors[index % colors.length];
+                wordElement.style.animationDelay = (index * 0.05) + 's';
+
+                // Apply rotation if enabled
+                if (rotateWords && Math.random() > 0.5) {
+                    const rotation = (Math.random() - 0.5) * 30; // -15 to 15 degrees
+                    wordElement.style.setProperty('--rotation', rotation + 'deg');
+                    wordElement.classList.add('rotated');
+                }
+
+                // Disable hover animation if unchecked
+                if (!animateHover) {
+                    wordElement.style.transition = 'none';
+                }
+
+                // Position the word based on shape
+                let placed = false;
+                let attempts = 0;
+                const maxAttempts = 100;
+
+                while (!placed && attempts < maxAttempts) {
+                    let x, y;
+                    
+                    // Generate position based on selected shape
+                    switch(shape) {
+                        case 'circle':
+                            const angle = Math.random() * Math.PI * 2;
+                            const radius = Math.sqrt(Math.random()) * Math.min(containerWidth, containerHeight) * 0.35;
+                            x = centerX + Math.cos(angle) * radius - 100;
+                            y = centerY + Math.sin(angle) * radius - 50;
+                            break;
+                        
+                        case 'heart':
+                            const t = Math.random() * Math.PI * 2;
+                            const scale = Math.min(containerWidth, containerHeight) * 0.12;
+                            x = centerX + scale * (16 * Math.pow(Math.sin(t), 3)) - 100;
+                            y = centerY - scale * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) - 50;
+                            break;
+                        
+                        case 'star':
+                            const starAngle = Math.random() * Math.PI * 2;
+                            const starRadius = (Math.random() * 0.5 + 0.5) * Math.min(containerWidth, containerHeight) * 0.3;
+                            const points = 5;
+                            const innerRadius = starRadius * 0.4;
+                            const isOuter = Math.random() > 0.5;
+                            const r = isOuter ? starRadius : innerRadius;
+                            x = centerX + Math.cos(starAngle) * r - 100;
+                            y = centerY + Math.sin(starAngle) * r - 50;
+                            break;
+                        
+                        case 'cloud':
+                            // Elliptical cloud shape
+                            const cloudAngle = Math.random() * Math.PI * 2;
+                            const a = containerWidth * 0.35;
+                            const b = containerHeight * 0.25;
+                            const r_cloud = Math.sqrt(Math.random());
+                            x = centerX + r_cloud * a * Math.cos(cloudAngle) - 100;
+                            y = centerY + r_cloud * b * Math.sin(cloudAngle) - 50;
+                            break;
+                        
+                        default:
+                            x = Math.random() * (containerWidth - 200) + 50;
+                            y = Math.random() * (containerHeight - 100) + 50;
+                    }
+
+                    const testElement = wordElement.cloneNode(true);
+                    testElement.style.left = x + 'px';
+                    testElement.style.top = y + 'px';
+                    testElement.style.opacity = '0';
+                    container.appendChild(testElement);
+
+                    const rect = testElement.getBoundingClientRect();
+                    let overlap = false;
+
+                    for (let pos of positions) {
+                        if (!(rect.right < pos.left || 
+                              rect.left > pos.right || 
+                              rect.bottom < pos.top || 
+                              rect.top > pos.bottom)) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+
+                    container.removeChild(testElement);
+
+                    if (!overlap) {
+                        wordElement.style.left = x + 'px';
+                        wordElement.style.top = y + 'px';
+                        positions.push(rect);
+                        placed = true;
+                    }
+
+                    attempts++;
+                }
+
+                if (placed) {
+                    container.appendChild(wordElement);
+                }
+            });
+
+            // Show stats panel
+            statsPanel.style.display = 'block';
+        }
+
+        function updateStats(wordsDisplayed, uniqueWords, totalWords, topWord) {
+            document.getElementById('stat-words').textContent = wordsDisplayed;
+            document.getElementById('stat-unique').textContent = uniqueWords;
+            document.getElementById('stat-total').textContent = totalWords;
+            document.getElementById('stat-top').textContent = topWord;
+        }
+
+        function downloadImage() {
+            const container = document.getElementById('wordcloud-container');
+            
+            if (container.children.length === 0 || container.querySelector('.empty-state')) {
+                alert('Veuillez d\'abord générer un nuage de mots');
+                return;
+            }
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const rect = container.getBoundingClientRect();
+            
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            
+            ctx.scale(2, 2);
+            
+            // Use theme-appropriate background
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            ctx.fillStyle = isDarkMode ? '#0F3460' : 'white';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            // Draw each word
+            const words = container.querySelectorAll('.word');
+            words.forEach(word => {
+                const style = window.getComputedStyle(word);
+                ctx.font = `700 ${style.fontSize} ${style.fontFamily}`;
+                ctx.fillStyle = style.color;
+                ctx.fillText(word.textContent, parseFloat(word.style.left), parseFloat(word.style.top) + parseFloat(style.fontSize) * 0.75);
+            });
+
+            // Download
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'nuage-de-mots.png';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>
